@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#121319"/>
+<title>Shirt Studio</title>
+<style>
+:root{
+  --bg:#121319;--panel:#191b22;--panel2:#20232b;--line:#2d313c;--muted:#9da4b2;--text:#f7f8fb;
+  --accent:#316cff;--danger:#ff4b55;--ok:#3ddc97;--shirt:#f7f7f4;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{color:inherit}
+.app{min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:72px;display:grid;grid-template-columns:68px 1fr 92px;align-items:center;padding:env(safe-area-inset-top) 10px 0;background:#181a20;border-bottom:1px solid #050607;position:sticky;top:0;z-index:50}
+.brand{font-weight:1000;font-style:italic;letter-spacing:-1px;text-align:center;font-size:28px}
+.brand span{font-size:10px;font-style:normal;letter-spacing:0;opacity:.7;margin-left:2px}
+.roundbtn{height:46px;border:1px solid #050607;border-radius:24px;background:#15171d;display:flex;align-items:center;justify-content:center;font-size:20px}
+.cart{display:grid;grid-template-columns:1fr 1fr}
+.cart span{display:flex;align-items:center;justify-content:center;height:100%}.cart span+span{border-left:1px solid #050607}
+.notice{padding:14px 12px;text-align:center;font-size:13px;border-bottom:1px solid #08090d;background:#101116;color:#e5e7ec}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#08090d;border-bottom:1px solid #08090d}
+.stepbtn{border:0;background:#191b22;color:#8e95a2;padding:11px 5px;font-size:12px}
+.stepbtn.active{background:#232631;color:white;font-weight:800}
+.stepbtn.done{color:#c8d1ff}
+.main{flex:1;display:flex;flex-direction:column}
+.page{display:none;min-height:0;flex:1}.page.active{display:flex;flex-direction:column}
+.hero{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 18px 10px;min-height:580px}
+.choose-card{width:min(760px,100%);text-align:center}
+.product-title{font-size:14px;letter-spacing:.22em;margin-bottom:10px;color:#f0f0f3}
+.shirt-stage{position:relative;width:min(640px,92vw);aspect-ratio:.82/1;background:#0c0d11;border-radius:2px;overflow:hidden;margin:auto}
+.shirt-svg{position:absolute;inset:4% 8%;width:84%;height:92%;filter:drop-shadow(0 20px 18px rgba(0,0,0,.25))}
+.shirt-fill{fill:var(--shirt);stroke:#d8dadd;stroke-width:2}
+.shirt-seam{fill:none;stroke:rgba(150,150,150,.18);stroke-width:8}
+.side-thumb-row{display:flex;justify-content:center;gap:14px;align-items:center;margin-top:12px}
+.thumb{width:58px;height:58px;border:1px solid #050607;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#15171d;font-size:26px;opacity:.65}
+.thumb.active{opacity:1;border-color:white}
+.cta{display:block;margin:18px auto 0;background:var(--accent);border:0;border-radius:28px;padding:13px 46px;font-weight:800;letter-spacing:.15em}
+.choose-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px auto 0;max-width:520px}
+.control{background:#181a21;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left}
+.control label{font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.control select,.control input[type=text]{width:100%;background:#0f1116;color:#fff;border:1px solid #303541;border-radius:9px;padding:10px}
+.editor-shell{display:flex;flex-direction:column;flex:1;min-height:0}
+.editor-header{height:52px;background:#1a1c23;border-bottom:1px solid #08090d;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:13px;letter-spacing:.15em}
+.editor-canvas-wrap{flex:1;min-height:520px;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.editor-stage{position:relative;width:min(760px,100vw);aspect-ratio:.82/1;background:#000;overflow:hidden}
+.editor-shirt{position:absolute;inset:2% 5%;width:90%;height:96%}
+.print-boundary{position:absolute;left:28%;top:24%;width:44%;height:57%;border:2px dashed rgba(49,108,255,.85);pointer-events:none;border-radius:4px}
+.print-boundary::before{content:"MAX PRINT 12.5 × 16 IN";position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.08em;color:#d9e2ff;background:rgba(18,19,25,.92);padding:3px 6px;border-radius:4px;white-space:nowrap}
+.art-layer{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%) rotate(0deg);transform-origin:center;display:none;touch-action:none;user-select:none}
+.art-layer.active{display:block}
+.art-layer img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.box{position:absolute;inset:0;border:2px solid rgba(49,108,255,.95);pointer-events:none}
+.handle{position:absolute;width:24px;height:24px;border-radius:50%;background:white;border:3px solid var(--accent);z-index:3;touch-action:none}
+.handle.se{right:-12px;bottom:-12px}
+.handle.rotate{right:-12px;top:-42px;background:#15171d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+.delete{position:absolute;width:24px;height:24px;border-radius:50%;left:-12px;top:-12px;background:var(--danger);color:white;border:0;font-size:16px;line-height:24px;padding:0;z-index:4}
+.measure{position:absolute;left:50%;bottom:-32px;transform:translateX(-50%);background:rgba(18,19,25,.92);border:1px solid #333845;border-radius:12px;padding:5px 8px;font-size:11px;white-space:nowrap}
+.editor-tools{display:grid;grid-template-columns:repeat(5,1fr);background:#171920;border-top:1px solid #08090d}
+.tool{border:0;border-right:1px solid #08090d;background:#171920;padding:13px 4px;color:#d9dce3;font-size:10px;text-align:center}
+.tool .icon{display:block;font-size:24px;margin-bottom:6px}
+.bottom-actions{display:grid;grid-template-columns:1fr 1fr;background:#16181f;border-top:1px solid #08090d}
+.bottom-actions button{height:58px;border:0;background:#16181f;letter-spacing:.12em}
+.bottom-actions button+button{border-left:1px solid #08090d}
+.bottom-actions .primary{background:var(--accent)}
+.floating-panel{position:absolute;right:12px;top:12px;background:rgba(23,25,32,.96);border:1px solid #303541;border-radius:12px;padding:10px;width:210px;z-index:8;display:none}
+.floating-panel.show{display:block}
+.floating-panel h4{margin:0 0 8px;font-size:12px}
+.field{margin:8px 0}.field label{font-size:10px;color:var(--muted);display:block;margin-bottom:4px}
+.field input[type=number],.field input[type=text],.field select{width:100%;background:#0f1116;color:#fff;border:1px solid #343946;border-radius:8px;padding:8px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.preset{width:100%;border:1px solid #343946;background:#111318;border-radius:8px;padding:8px;margin:4px 0;text-align:left}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.swatch{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.28)}
+.review{padding:24px;max-width:900px;margin:auto;width:100%}
+.review-stage{background:#14161c;border-radius:14px;padding:16px}
+.review-shirts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.review-shirt{position:relative;aspect-ratio:.82/1;background:#0d0e12;border-radius:10px;overflow:hidden}
+.review-shirt svg{position:absolute;inset:5%;width:90%;height:90%}
+.review-art{position:absolute;object-fit:contain}
+.size-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:16px}
+.sizebox{border:1px solid #343946;background:#171920;border-radius:8px;padding:10px 4px;text-align:center}
+.sizebox input{width:100%;margin-top:6px;background:#0f1116;border:1px solid #303541;color:#fff;border-radius:6px;padding:6px;text-align:center}
+.review-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.review-controls .control{margin:0}
+.proofbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.proofbar button{border:0;border-radius:10px;padding:14px;font-weight:800}.proofbar .primary{background:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.76);display:none;align-items:center;justify-content:center;z-index:100;padding:18px}
+.modal.show{display:flex}
+.sheet{width:min(900px,96vw);max-height:92vh;overflow:auto;background:white;color:#111;border-radius:16px;padding:24px}
+.sheet h1{margin-top:0}.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.sheet-box{border:1px solid #ddd;border-radius:10px;padding:12px}
+.sheet table{width:100%;border-collapse:collapse;margin-top:16px}.sheet td,.sheet th{border:1px solid #ddd;padding:8px;text-align:left}
+.sheet-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.sheet-actions button{padding:10px 14px;border-radius:8px;border:1px solid #ccc}.sheet-actions .primary{background:#316cff;color:#fff;border-color:#316cff}
+@media(max-width:720px){
+  .notice{display:none}.topbar{height:64px}.brand{font-size:24px}.steps{position:sticky;top:64px;z-index:45}
+  .stepbtn{font-size:10px;padding:9px 2px}.hero{min-height:520px;padding-top:18px}.choose-controls{grid-template-columns:1fr}
+  .editor-canvas-wrap{min-height:480px}.floating-panel{left:10px;right:10px;top:10px;width:auto}
+  .review-shirts{grid-template-columns:1fr}.size-grid{grid-template-columns:repeat(3,1fr)}.review-controls{grid-template-columns:1fr}
+}
+@media print{
+  body *{visibility:hidden}.modal.show,.modal.show *{visibility:visible}.modal{display:block;position:absolute;background:white;padding:0}.sheet{width:100%;max-height:none;border-radius:0}.sheet-actions{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button class="roundbtn" id="menuBtn">☰</button>
+    <div class="brand">SHIRT<span>STUDIO</span></div>
+    <div class="roundbtn cart"><span id="cartQty">0</span><span>🛒</span></div>
+  </div>
+  <div class="notice">Create client-ready shirt designs and production proofs</div>
+
+  <div class="steps">
+    <button class="stepbtn active" data-step="1">1. SHIRT</button>
+    <button class="stepbtn" data-step="2">2. FRONT</button>
+    <button class="stepbtn" data-step="3">3. BACK</button>
+    <button class="stepbtn" data-step="4">4. REVIEW</button>
+  </div>
+
+  <div class="main">
+    <!-- STEP 1 -->
+    <section class="page active" id="page1">
+      <div class="hero">
+        <div class="choose-card">
+          <div class="product-title">CLASSIC TEE</div>
+          <div class="shirt-stage">
+            <svg class="shirt-svg" viewBox="0 0 600 700">
+              <path class="shirt-fill" d="M205 65 Q250 100 300 100 Q350 100 395 65 L510 120 L465 240 L420 220 L420 640 Q300 680 180 640 L180 220 L135 240 L90 120 Z"/>
+              <path class="shirt-seam" d="M244 67 Q300 135 356 67"/>
+            </svg>
+          </div>
+          <div class="side-thumb-row">
+            <div class="thumb active">👕</div><div class="thumb">◧</div><div class="thumb">◨</div>
+          </div>
+          <div class="choose-controls">
+            <div class="control"><label>Shirt Style</label><select id="shirtStyle"><option>Classic Tee</option><option>Women's Tee</option><option>Long Sleeve</option><option>Hoodie</option></select></div>
+            <div class="control"><label>Client</label><input id="client" type="text" placeholder="Client name"></div>
+            <div class="control"><label>Project / Job #</label><input id="job" type="text" placeholder="Job number"></div>
+            <div class="control"><label>Shirt Color</label><div class="swatches" id="chooseSwatches"></div></div>
+          </div>
+          <button class="cta" id="customizeBtn">CUSTOMIZE</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 FRONT -->
+    <section class="page" id="page2">
+      <div class="editor-shell">
+        <div class="editor-header"><span>CLASSIC TEE — FRONT</span><span id="frontDimsHeader">NO ARTWORK</span></div>
+        <div class="editor-canvas-wrap">
+          <div class="editor-stage" id="frontStage">
+            <svg class="editor-shirt" viewBox="0 0 600 700">
+              <path class="shirt-fill front-fill" d="M205 65 Q250 100 300 100 Q350 100 395 65 L510 120 L465 240 L420 220 L420 640 Q300 680 180 640 L180 220 L135 240 L90 120 Z"/>
+              <path class="shirt-seam" d="M244 67 Q300 135 356 67"/>
+            </svg>
+            <div class="print-boundary"></div>
+            <div class="art-layer" id="frontLayer">
+              <img id="frontImg" alt="">
+              <div class="box"></div>
+              <button class="delete" data-side="front">×</button>
+              <div class="handle se" data-side="front" data-kind="resize"></div>
+              <div class="handle rotate" data-side="front" data-kind="rotate">↻</div>
+              <div class="measure" id="frontMeasure">0 × 0 in</div>
+            </div>
+            <div class="floating-panel" id="frontPanel">
+              <h4>FRONT ARTWORK</h4>
+              <div class="row"><div class="field"><label>Width (in)</label><input type="number" id="frontW" min=".5" max="12.5" step=".25"></div><div class="field"><label>Height (in)</label><input type="number" id="frontH" min=".5" max="16" step=".25"></div></div>
+              <div class="row"><button class="preset" data-side="front" data-w="3" data-h="4.5">Left Chest</button><button class="preset" data-side="front" data-w="10" data-h="12">Standard</button></div>
+              <div class="row"><button class="preset" id="frontCenter">Center</button><button class="preset" id="frontClosePanel">Done</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="editor-tools">
+          <button class="tool" data-tool="color"><span class="icon">◉</span>CHANGE COLOR</button>
+          <button class="tool" data-tool="front-image"><span class="icon">▧</span>ADD IMAGE</button>
+          <button class="tool" data-tool="front-center"><span class="icon">⊕</span>CENTER</button>
+          <button class="tool" data-tool="front-edit"><span class="icon">↔</span>SIZE</button>
+          <button class="tool" data-tool="front-text"><span class="icon">✎</span>ADD TEXT</button>
+        </div>
+        <div class="bottom-actions"><button data-nav="1">BACK</button><button class="primary" data-nav="3">NEXT: BACK</button></div>
+      </div>
+    </section>
+
+    <!-- STEP 3 BACK -->
+    <section class="page" id="page3">
+      <div class="editor-shell">
+        <div class="editor-header"><span>CLASSIC TEE — BACK</span><span id="backDimsHeader">NO ARTWORK</span></div>
+        <div class="editor-canvas-wrap">
+          <div class="editor-stage" id="backStage">
+            <svg class="editor-shirt" viewBox="0 0 600 700">
+              <path class="shirt-fill back-fill" d="M205 65 Q250 100 300 100 Q350 100 395 65 L510 120 L465 240 L420 220 L420 640 Q300 680 180 640 L180 220 L135 240 L90 120 Z"/>
+              <path class="shirt-seam" d="M257 70 Q300 105 343 70"/>
+            </svg>
+            <div class="print-boundary"></div>
+            <div class="art-layer" id="backLayer">
+              <img id="backImg" alt="">
+              <div class="box"></div>
+              <button class="delete" data-side="back">×</button>
+              <div class="handle se" data-side="back" data-kind="resize"></div>
+              <div class="handle rotate" data-side="back" data-kind="rotate">↻</div>
+              <div class="measure" id="backMeasure">0 × 0 in</div>
+            </div>
+            <div class="floating-panel" id="backPanel">
+              <h4>BACK ARTWORK</h4>
+              <div class="row"><div class="field"><label>Width (in)</label><input type="number" id="backW" min=".5" max="12.5" step=".25"></div><div class="field"><label>Height (in)</label><input type="number" id="backH" min=".5" max="16" step=".25"></div></div>
+              <div class="row"><button class="preset" data-side="back" data-w="11" data-h="14">Standard Back</button><button class="preset" data-side="back" data-w="12" data-h="15">Large Back</button></div>
+              <div class="row"><button class="preset" id="backCenter">Center</button><button class="preset" id="backClosePanel">Done</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="editor-tools">
+          <button class="tool" data-tool="color"><span class="icon">◉</span>CHANGE COLOR</button>
+          <button class="tool" data-tool="back-image"><span class="icon">▧</span>ADD IMAGE</button>
+          <button class="tool" data-tool="back-center"><span class="icon">⊕</span>CENTER</button>
+          <button class="tool" data-tool="back-edit"><span class="icon">↔</span>SIZE</button>
+          <button class="tool" data-tool="back-text"><span class="icon">✎</span>ADD TEXT</button>
+        </div>
+        <div class="bottom-actions"><button data-nav="2">BACK: FRONT</button><button class="primary" data-nav="4">NEXT: REVIEW</button></div>
+      </div>
+    </section>
+
+    <!-- STEP 4 REVIEW -->
+    <section class="page" id="page4">
+      <div class="review">
+        <div class="product-title" style="text-align:left;margin-bottom:14px">REVIEW & PRODUCTION</div>
+        <div class="review-stage">
+          <div class="review-shirts">
+            <div class="review-shirt" id="reviewFront"></div>
+            <div class="review-shirt" id="reviewBack"></div>
+          </div>
+          <div class="size-grid">
+            <div class="sizebox">S<input type="number" min="0" value="0" data-size="S"></div>
+            <div class="sizebox">M<input type="number" min="0" value="0" data-size="M"></div>
+            <div class="sizebox">L<input type="number" min="0" value="0" data-size="L"></div>
+            <div class="sizebox">XL<input type="number" min="0" value="0" data-size="XL"></div>
+            <div class="sizebox">2XL<input type="number" min="0" value="0" data-size="2XL"></div>
+            <div class="sizebox">3XL<input type="number" min="0" value="0" data-size="3XL"></div>
+          </div>
+          <div class="review-controls">
+            <div class="control"><label>Print Method</label><select id="printMethod"><option>DTF</option><option>Screen Print</option><option>DTG</option><option>HTV / Vinyl</option><option>Sublimation</option></select></div>
+            <div class="control"><label>Status</label><select id="status"><option>Draft</option><option>Client Review</option><option>Approved for Production</option><option>Changes Requested</option></select></div>
+            <div class="control"><label>Notes</label><input id="notes" type="text" placeholder="Production notes"></div>
+            <div class="control"><label>Mock-Up</label><button id="mockupBtn" class="preset">REAL MODEL MOCK-UP — COMING NEXT</button></div>
+          </div>
+          <div class="proofbar">
+            <button data-nav="3">BACK</button>
+            <button class="primary" id="proofBtn">CREATE CLIENT PROOF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<input id="frontFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+<input id="backFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h1>Client Proof / Production Sheet</h1>
+    <div id="sheetMeta"></div>
+    <div class="sheet-grid">
+      <div class="sheet-box"><h3>Front</h3><div id="sheetFront"></div><p id="sheetFrontSpec"></p></div>
+      <div class="sheet-box"><h3>Back</h3><div id="sheetBack"></div><p id="sheetBackSpec"></p></div>
+    </div>
+    <table>
+      <tr><th>Shirt</th><td id="sheetShirt"></td></tr>
+      <tr><th>Print Method</th><td id="sheetPrint"></td></tr>
+      <tr><th>Status</th><td id="sheetStatus"></td></tr>
+      <tr><th>Sizes / Qty</th><td id="sheetSizes"></td></tr>
+      <tr><th>Notes</th><td id="sheetNotes"></td></tr>
+    </table>
+    <div class="sheet-actions"><button id="closeModal">Close</button><button class="primary" onclick="window.print()">Print / Save PDF</button></div>
+  </div>
+</div>
+
+<script>
+const COLORS=['#f7f7f4','#111111','#d6a13c','#565a61','#8a8f96','#d5552c','#3c2274','#d92e34'];
+const BOUND={left:28,top:24,width:44,height:57}; const MAX_W=12.5,MAX_H=16;
+const state={
+  step:1, shirtColor:'#f7f7f4',
+  front:{src:null,w:8,h:8,x:50,y:44,rot:0},
+  back:{src:null,w:11,h:14,x:50,y:51,rot:0}
+};
+const $=id=>document.getElementById(id);
+
+function applyShirtColor(){
+  document.documentElement.style.setProperty('--shirt',state.shirtColor);
+  document.querySelectorAll('.shirt-fill').forEach(p=>p.setAttribute('fill',state.shirtColor));
+}
+function makeSwatches(){
+  const host=$('chooseSwatches'); host.innerHTML='';
+  COLORS.forEach(c=>{
+    const b=document.createElement('button');b.className='swatch';b.style.background=c;b.title=c;
+    b.onclick=()=>{state.shirtColor=c;applyShirtColor();};
+    host.appendChild(b);
+  });
+}
+function gotoStep(n){
+  state.step=n;
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n-1));
+  document.querySelectorAll('.stepbtn').forEach(b=>{
+    const s=+b.dataset.step;b.classList.toggle('active',s===n);b.classList.toggle('done',s<n);
+  });
+  if(n===4) renderReview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>gotoStep(+b.dataset.nav)));
+document.querySelectorAll('.stepbtn').forEach(b=>b.addEventListener('click',()=>gotoStep(+b.dataset.step)));
+$('customizeBtn').onclick=()=>gotoStep(2);
+
+function pctW(w){return (w/MAX_W)*BOUND.width}
+function pctH(h){return (h/MAX_H)*BOUND.height}
+function clamp(side){
+  const f=state[side]; f.w=Math.max(.5,Math.min(MAX_W,f.w));f.h=Math.max(.5,Math.min(MAX_H,f.h));
+  const wp=pctW(f.w),hp=pctH(f.h);
+  f.x=Math.max(BOUND.left+wp/2,Math.min(BOUND.left+BOUND.width-wp/2,f.x));
+  f.y=Math.max(BOUND.top+hp/2,Math.min(BOUND.top+BOUND.height-hp/2,f.y));
+}
+function renderSide(side){
+  clamp(side); const f=state[side], layer=$(side+'Layer'), img=$(side+'Img');
+  if(f.src){layer.classList.add('active');img.src=f.src}else layer.classList.remove('active');
+  layer.style.left=f.x+'%';layer.style.top=f.y+'%';layer.style.width=pctW(f.w)+'%';layer.style.height=pctH(f.h)+'%';
+  layer.style.transform=`translate(-50%,-50%) rotate(${f.rot}deg)`;
+  $(side+'Measure').textContent=`${f.w.toFixed(2).replace(/\.00$/,'')} × ${f.h.toFixed(2).replace(/\.00$/,'')} in`;
+  $(side+'DimsHeader').textContent=f.src?`${f.w.toFixed(2)} × ${f.h.toFixed(2)} IN`:'NO ARTWORK';
+  $(side+'W').value=f.w.toFixed(2);$(side+'H').value=f.h.toFixed(2);
+}
+function centerSide(side){state[side].x=50;state[side].y=BOUND.top+BOUND.height/2;renderSide(side)}
+
+async function fileToData(file){
+  const raw=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});
+  if(file.type==='image/svg+xml') return raw;
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=raw});
+  const maxDim=1800,scale=Math.min(1,maxDim/Math.max(img.naturalWidth,img.naturalHeight));
+  if(scale===1 && file.size<2500000)return raw;
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*scale));c.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.9);
+}
+async function importFor(side,file){
+  if(!file)return;
+  try{
+    const src=await fileToData(file);
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+    let w=side==='front'?8:11,h=w/(img.naturalWidth/img.naturalHeight);
+    if(h>14){h=14;w=h*(img.naturalWidth/img.naturalHeight)}
+    state[side]={...state[side],src,w:Math.min(MAX_W,w),h:Math.min(MAX_H,h),x:50,y:side==='front'?44:50,rot:0};
+    renderSide(side);
+  }catch(e){alert('That image could not be imported. Try PNG or JPG.');console.error(e)}
+}
+$('frontFile').onchange=e=>{importFor('front',e.target.files[0]);e.target.value=''};
+$('backFile').onchange=e=>{importFor('back',e.target.files[0]);e.target.value=''};
+
+function setupSide(side){
+  const stage=$(side+'Stage'),layer=$(side+'Layer');
+  let drag=null,resize=null,rotate=null;
+  layer.addEventListener('pointerdown',e=>{
+    if(e.target.matches('.handle,.delete'))return;
+    e.preventDefault();const r=stage.getBoundingClientRect();
+    drag={id:e.pointerId,sx:e.clientX,sy:e.clientY,ox:state[side].x,oy:state[side].y,r};layer.setPointerCapture(e.pointerId);
+  });
+  layer.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    state[side].x=drag.ox+(e.clientX-drag.sx)/drag.r.width*100;
+    state[side].y=drag.oy+(e.clientY-drag.sy)/drag.r.height*100;renderSide(side);
+  });
+  layer.addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.id)drag=null});
+  const rh=layer.querySelector('[data-kind=resize]');
+  rh.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();const r=stage.getBoundingClientRect();resize={id:e.pointerId,sx:e.clientX,sy:e.clientY,ow:state[side].w,oh:state[side].h,ratio:state[side].w/state[side].h,r};rh.setPointerCapture(e.pointerId)});
+  rh.addEventListener('pointermove',e=>{
+    if(!resize||e.pointerId!==resize.id)return;
+    const dx=(e.clientX-resize.sx)/resize.r.width*100,dy=(e.clientY-resize.sy)/resize.r.height*100;
+    let nw=Math.max(.5,Math.min(MAX_W,resize.ow+((dx+dy)/2)/BOUND.width*MAX_W)),nh=nw/resize.ratio;
+    if(nh>MAX_H){nh=MAX_H;nw=nh*resize.ratio}state[side].w=nw;state[side].h=nh;renderSide(side);
+  });
+  rh.addEventListener('pointerup',e=>{if(resize&&e.pointerId===resize.id)resize=null});
+  const rot=layer.querySelector('[data-kind=rotate]');
+  rot.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();const r=layer.getBoundingClientRect();rotate={id:e.pointerId,cx:r.left+r.width/2,cy:r.top+r.height/2,start:state[side].rot};rot.setPointerCapture(e.pointerId)});
+  rot.addEventListener('pointermove',e=>{if(!rotate||e.pointerId!==rotate.id)return;state[side].rot=Math.atan2(e.clientY-rotate.cy,e.clientX-rotate.cx)*180/Math.PI+90;renderSide(side)});
+  rot.addEventListener('pointerup',e=>{if(rotate&&e.pointerId===rotate.id)rotate=null});
+}
+setupSide('front');setupSide('back');
+
+document.querySelectorAll('.delete').forEach(b=>b.onclick=e=>{e.stopPropagation();const s=b.dataset.side;state[s].src=null;renderSide(s)});
+document.querySelectorAll('.preset[data-side]').forEach(b=>b.onclick=()=>{const s=b.dataset.side;state[s].w=+b.dataset.w;state[s].h=+b.dataset.h;centerSide(s)});
+['front','back'].forEach(s=>{
+  $(s+'W').oninput=e=>{state[s].w=parseFloat(e.target.value)||.5;renderSide(s)};
+  $(s+'H').oninput=e=>{state[s].h=parseFloat(e.target.value)||.5;renderSide(s)};
+});
+$('frontCenter').onclick=()=>centerSide('front');$('backCenter').onclick=()=>centerSide('back');
+$('frontClosePanel').onclick=()=>$('frontPanel').classList.remove('show');$('backClosePanel').onclick=()=>$('backPanel').classList.remove('show');
+
+document.querySelectorAll('.tool').forEach(b=>b.onclick=()=>{
+  const t=b.dataset.tool;
+  if(t==='front-image')$('frontFile').click();
+  else if(t==='back-image')$('backFile').click();
+  else if(t==='front-center')centerSide('front');
+  else if(t==='back-center')centerSide('back');
+  else if(t==='front-edit')$('frontPanel').classList.toggle('show');
+  else if(t==='back-edit')$('backPanel').classList.toggle('show');
+  else if(t==='color'){
+    const c=prompt('Enter shirt color (example: #ffffff, black, navy):',state.shirtColor);
+    if(c){state.shirtColor=c;applyShirtColor();}
+  }else if(t==='front-text'||t==='back-text'){
+    const side=t.startsWith('front')?'front':'back',txt=prompt('Enter text to add:');
+    if(!txt)return;
+    const c=document.createElement('canvas');c.width=1200;c.height=300;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#111';ctx.font='bold 120px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,600,150);
+    state[side].src=c.toDataURL('image/png');state[side].w=8;state[side].h=2.5;centerSide(side);
+  }
+});
+
+function miniSvg(side){
+  const f=state[side]; const w=pctW(f.w),h=pctH(f.h);
+  const shirt=`<svg viewBox="0 0 600 700"><path d="M205 65 Q250 100 300 100 Q350 100 395 65 L510 120 L465 240 L420 220 L420 640 Q300 680 180 640 L180 220 L135 240 L90 120 Z" fill="${state.shirtColor}" stroke="#ddd" stroke-width="2"/><path d="M244 67 Q300 135 356 67" fill="none" stroke="rgba(150,150,150,.18)" stroke-width="8"/></svg>`;
+  let art='';
+  if(f.src) art=`<img src="${f.src}" class="review-art" style="left:${f.x}%;top:${f.y}%;width:${w}%;height:${h}%;transform:translate(-50%,-50%) rotate(${f.rot}deg)">`;
+  return shirt+art;
+}
+function renderReview(){
+  $('reviewFront').innerHTML=miniSvg('front');$('reviewBack').innerHTML=miniSvg('back');
+  updateQty();
+}
+function updateQty(){
+  let q=0;document.querySelectorAll('[data-size]').forEach(i=>q+=Math.max(0,+i.value||0));$('cartQty').textContent=q;
+}
+document.querySelectorAll('[data-size]').forEach(i=>i.oninput=updateQty);
+
+$('mockupBtn').onclick=()=>alert('The realistic male/female model mock-up generator is the next module. The front/back artwork and exact placement are already being stored for that feature.');
+
+$('proofBtn').onclick=()=>{
+  renderReview();
+  $('sheetMeta').innerHTML=`<strong>Client:</strong> ${$('client').value||'—'} &nbsp;&nbsp; <strong>Job #:</strong> ${$('job').value||'—'} &nbsp;&nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString()}`;
+  $('sheetFront').innerHTML=`<div style="position:relative;aspect-ratio:.82/1;background:#eee;overflow:hidden">${miniSvg('front')}</div>`;
+  $('sheetBack').innerHTML=`<div style="position:relative;aspect-ratio:.82/1;background:#eee;overflow:hidden">${miniSvg('back')}</div>`;
+  const sf=state.front,sb=state.back;
+  $('sheetFrontSpec').textContent=sf.src?`${sf.w.toFixed(2)}" W × ${sf.h.toFixed(2)}" H`:'No front graphic';
+  $('sheetBackSpec').textContent=sb.src?`${sb.w.toFixed(2)}" W × ${sb.h.toFixed(2)}" H`:'No back graphic';
+  $('sheetShirt').textContent=`${$('shirtStyle').value} — ${state.shirtColor}`;
+  $('sheetPrint').textContent=$('printMethod').value;$('sheetStatus').textContent=$('status').value;$('sheetNotes').textContent=$('notes').value||'—';
+  const sizes=[];document.querySelectorAll('[data-size]').forEach(i=>{if(+i.value>0)sizes.push(`${i.dataset.size}: ${i.value}`)});$('sheetSizes').textContent=sizes.length?sizes.join(', '):'None selected';
+  $('modal').classList.add('show');
+};
+$('closeModal').onclick=()=>$('modal').classList.remove('show');
+
+makeSwatches();applyShirtColor();renderSide('front');renderSide('back');
+</script>
+</body>
+</html>
